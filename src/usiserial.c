@@ -206,25 +206,24 @@ void usiserial_init( void )
 	       ;
 
 	// Pin configuration
-	USISERIAL_DDR   &= ~(_BV(USISERIAL_DO_P) | _BV(USISERIAL_DI_P)); // Input.
-	USISERIAL_PORT  |= _BV(USISERIAL_DO_P) | _BV(USISERIAL_DI_P); // Enable pullups.
+	USISERIAL_DDR  &= ~( _BV(USISERIAL_DO_P) | _BV(USISERIAL_DI_P) ); // Input.
+	USISERIAL_PORT |=    _BV(USISERIAL_DO_P) | _BV(USISERIAL_DI_P);   // Enable pullups.
 	GIMSK |= _BV(USISERIAL_PCIE); // Enable pin change interrupts.
 
-	// Wait for incoming data
+	// Wait for incoming data.
 	usiserial_switch2Rx();
 }
 
 
 void usiserial_putByte( uint8_t data )
 {
-	uint8_t tmphead = (txHead+1) & USISERIAL_TX_BUFFER_MASK; // Calculate buffer index.
-	while( tmphead == txTail );                              // Wait for free space in buffer.
-	txBuf[tmphead] = reverse_byte( data );                   // Reverse the order of the bits in the data byte and store data in buffer.
-	txHead = tmphead;                                        // Store new index.
+	uint8_t tmphead = (txHead + 1) & USISERIAL_TX_BUFFER_MASK; // Calculate buffer index.
+	while( tmphead == txTail );                                // Wait for free space in buffer.
+	txBuf[tmphead] = reverse_byte( data );                     // Reverse the order of the bits in the data byte and store data in buffer.
+	txHead = tmphead;                                          // Store new index.
 
-	if ( !status.ongoing_Transmission_From_Buffer )          // Start transmission from buffer (if not already started).
-	{
-		while( status.ongoing_Reception_Of_Package );        // Wait for USI to finish reading incoming data.
+	if ( !status.ongoing_Transmission_From_Buffer ) {          // Start transmission from buffer (if not already started).
+		while( status.ongoing_Reception_Of_Package );          //  Wait for USI to finish reading incoming data.
 		usiserial_switch2Tx();
 	}
 }
@@ -232,10 +231,10 @@ void usiserial_putByte( uint8_t data )
 
 uint8_t usiserial_getByte( void )
 {
-	while( rxHead == rxTail );                          // Wait for incoming data 
-	uint8_t tmptail = (rxTail+1) & USISERIAL_RX_BUFFER_MASK; // Calculate buffer index 
-	rxTail = tmptail;                                   // Store new index 
-	return reverse_byte( rxBuf[tmptail] );              // Reverse the order of the bits in the data byte before it returns data from the buffer.
+	while( rxHead == rxTail );                                 // Wait for incoming data.
+	uint8_t tmptail = (rxTail + 1) & USISERIAL_RX_BUFFER_MASK; // Calculate buffer index.
+	rxTail = tmptail;                                          // Store new index.
+	return reverse_byte( rxBuf[tmptail] );                     // Reverse the order of the bits in the data byte before it returns data from the buffer.
 }
 
 
@@ -253,8 +252,7 @@ uint8_t usiserial_txAvailable( void )
 
 ISR( PCINT_vect )
 {
-	if( !(USISERIAL_PIN & _BV(USISERIAL_DI_P)) )
-	{
+	if( !(USISERIAL_PIN & _BV(USISERIAL_DI_P)) ) {
 		USISERIAL_PCMSK &= ~_BV(USISERIAL_PCINT); // Disable Pin Change interrupt on DI pin.
 		status.ongoing_Reception_Of_Package = true;
 
@@ -265,37 +263,31 @@ ISR( PCINT_vect )
 
 ISR( USI_OVF_vect )
 {
-	// Check if we are running in Transmit mode.
-	if( status.ongoing_Transmission_From_Buffer )
-	{
-		// If ongoing transmission, then send second half of transmit data.
-		if( status.ongoing_Transmission_Of_Package )
-		{
-			status.ongoing_Transmission_Of_Package = false; // Clear on-going package transmission flag.
-			usiserial_continueUsiTx( (txData<<3)|0x07, USISERIAL_COUNTER_SEED_TRANSMIT ); // Rest of the data and a stop-bit.
-		} else { // Else start sending more data or leave transmit mode.
-			if( txHead != txTail ) // If there is data in the transmit buffer, then send first half of data.
-			{
-				status.ongoing_Transmission_Of_Package = true;           // Set on-going package transmission flag.
-				uint8_t tmptail = (txTail+1) & USISERIAL_TX_BUFFER_MASK; // Calculate buffer index.
-				txTail = tmptail;                                        // Store new index.
-				txData = txBuf[tmptail];                                 // Read out the data that is to be sent. Note that the data must be bit reversed before sent.
-				                                                         // The bit reversing is moved to the application section to save time within the interrupt.
-				usiserial_continueUsiTx( (txData>>2)|0x80, USISERIAL_COUNTER_SEED_TRANSMIT ); // Copy (initial high state,) start-bit and 6 LSB of original data (6 MSB of bit of bit reversed data).
-			} else { // Else enter receive mode.
+	if( status.ongoing_Transmission_From_Buffer ) {                                           // Check if we are running in Transmit mode.
+		if( status.ongoing_Transmission_Of_Package ) {                                        //  If ongoing transmission, then send second half of transmit data.
+			status.ongoing_Transmission_Of_Package = false;                                   //   Clear on-going package transmission flag.
+			usiserial_continueUsiTx( (txData<<3)|0x07, USISERIAL_COUNTER_SEED_TRANSMIT );     //   Rest of the data and a stop-bit.
+		} else {                                                                              //  Else start sending more data or leave transmit mode.
+			if( txHead != txTail ) {                                                          //   If there is data in the transmit buffer, then send first half of data.
+				status.ongoing_Transmission_Of_Package = true;                                //    Set on-going package transmission flag.
+				uint8_t tmptail = (txTail+1) & USISERIAL_TX_BUFFER_MASK;                      //    Calculate buffer index.
+				txTail = tmptail;                                                             //    Store new index.
+				txData = txBuf[tmptail];                                                      //    Read out the data that is to be sent. Note that the data must be bit reversed before sent.
+				                                                                              //    The bit reversing is moved to the application section to save time within the interrupt.
+				usiserial_continueUsiTx( (txData>>2)|0x80, USISERIAL_COUNTER_SEED_TRANSMIT ); //    Copy (initial high state,) start-bit and 6 LSB of original data (6 MSB of bit of bit reversed data).
+			} else {                                                                          //   Else enter receive mode.
 				usiserial_switch2Rx();
 			}
 		}
-	} else { // Else running in receive mode.
+	} else {                                                                                  // Else running in receive mode.
 		status.ongoing_Reception_Of_Package = false;
-		uint8_t tmphead = (rxHead+1) & USISERIAL_RX_BUFFER_MASK; // Calculate buffer index.
-		if( tmphead == rxTail )                                  // If buffer is full trash data and set buffer full flag.
-		{
-			status.reception_Buffer_Overflow = true;             // Store status to take actions elsewhere in the application code
-		} else {                                                 // If there is space in the buffer then store the data.
-			rxHead = tmphead;                                    // Store new index.
-			rxBuf[tmphead] = usiserial_getUsiRx();               // Store received data in buffer. Note that the data must be bit reversed before used. 
-		}                                                        // The bit reversing is moved to the application section to save time within the interrupt.
+		uint8_t tmphead = (rxHead+1) & USISERIAL_RX_BUFFER_MASK;                              //  Calculate buffer index.
+		if( tmphead == rxTail ) {                                                             //  If buffer is full trash data and set buffer full flag.
+			status.reception_Buffer_Overflow = true;                                          //   Store status to take actions elsewhere in the application code
+		} else {                                                                              //  If there is space in the buffer then store the data.
+			rxHead = tmphead;                                                                 //   Store new index.
+			rxBuf[tmphead] = usiserial_getUsiRx();                                            //   Store received data in buffer. Note that the data must be bit reversed before used.
+		}                                                                                     //  The bit reversing is moved to the application section to save time within the interrupt.
 		usiserial_switch2Rx();
 	}
 }
@@ -306,9 +298,9 @@ ISR( TIMER0_OVF_vect )
 	// Reload the timer, current count is added for timing correction.
 	uint16_t count = TCNT0L;
 	count |= (uint16_t)TCNT0H << 8;
-	
+
 	count += USISERIAL_TIMER0_SEED;
-	
+
 	TCNT0H = count >> 8;
 	TCNT0L = count;
 }

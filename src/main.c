@@ -1,3 +1,21 @@
+/*
+ * IlluminatIR
+ * Copyright (C) 2021  zwostein
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -404,11 +422,9 @@ int main(void)
 #endif
 
 		uint8_t rec = usiserial_getByte();
-		if( rec == 0 )
-		{
+		if( rec == 0 ) {
 			/*
-			for( uint8_t i = 0; i < packet_pos; i++ )
-			{
+			for( uint8_t i = 0; i < packet_pos; i++ ) {
 				fprintf_P( &usi, PSTR("%02x"), (unsigned)packet[i] );
 			}
 			fprintf_P( &usi, PSTR("00\n") );
@@ -420,8 +436,7 @@ int main(void)
 
 			packet_pos = 0;
 		} else {
-			if( packet_pos < sizeof(packet)-1 )
-			{
+			if( packet_pos < sizeof(packet)-1 ) {
 				packet[packet_pos] = rec;
 				packet_pos++;
 			}
