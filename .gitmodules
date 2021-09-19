@@ -1,3 +1,6 @@
 [submodule "ext/cobs-c"]
 	path = ext/cobs-c
 	url = https://github.com/cmcqueen/cobs-c.git
+[submodule "ext/libilluminatir"]
+	path = ext/libilluminatir
+	url = https://github.com/zwostein/libilluminatir.git

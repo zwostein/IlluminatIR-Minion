@@ -30,8 +30,8 @@
 
 #include <util/delay.h>
 
-#include "illuminatir.h"
-#include "crc8.h"
+#include <illuminatir.h>
+
 #include "usiserial.h"
 #include "gammaLut.h"
 
@@ -215,7 +215,7 @@ config_t EEMEM eepromConfig;
 static bool config_get( config_t * config, const config_t * defaultConfig )
 {
 	eeprom_read_block( config, (const void*)&eepromConfig, sizeof(config_t) );
-	uint8_t crc = crc8( (const void*)config, sizeof(config_t)-1, CRC8_INITIAL_SEED );
+	uint8_t crc = illuminatir_crc8( (const void*)config, sizeof(config_t)-1, ILLUMINATIR_CRC8_INITIAL_SEED );
 	if( crc == config->crc ) {
 		return true;
 	}
@@ -229,7 +229,7 @@ static bool config_get( config_t * config, const config_t * defaultConfig )
 
 static void config_update( config_t * config )
 {
-	config->crc = crc8( (const void*)config, sizeof(config_t)-1, CRC8_INITIAL_SEED );
+	config->crc = illuminatir_crc8( (const void*)config, sizeof(config_t)-1, ILLUMINATIR_CRC8_INITIAL_SEED );
 	eeprom_update_block( (const void*)config, &eepromConfig, sizeof(config_t) );
 }
 
@@ -429,9 +429,9 @@ int main(void)
 			}
 			fprintf_P( &usi, PSTR("00\n") );
 			*/
-			illuminatIr_error_t err = illuminatIr_parse_fromCobs( packet, packet_pos, setChannel, setConfig );
+			illuminatir_error_t err = illuminatir_cobs_parse( packet, packet_pos, setChannel, setConfig );
 			if( err != ILLUMINATIR_ERROR_NONE ) {
-				fprintf_P( &usi, PSTR("Could not parse packet: %S\n"), illuminatIr_error_toProgString(err) );
+				fprintf_P( &usi, PSTR("Could not parse packet: %S\n"), illuminatir_error_toString_P(err) );
 			}
 
 			packet_pos = 0;
