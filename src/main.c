@@ -400,7 +400,7 @@ int main(void)
 	softPwmLed_set ( currentValues.uv    );
 
 	while( true ) {
-		static uint8_t packet[ILLUMINATIR_MAX_PACKET_SIZE];
+		static uint8_t packet[ILLUMINATIR_COBS_PACKET_MAXSIZE];
 		static uint8_t packet_pos = 0;
 
 #ifdef CHANNELSWITCHES_ENABLE

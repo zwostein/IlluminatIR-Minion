@@ -1,7 +1,6 @@
 # IlluminatIR-Minion
 
-IlluminatIR synchronizes lighting devices (and possibly other gadgets) via an infrared serial protocol.
-The infrared transmitter is connected to a host computer via USB and acts as a HID device.
+IlluminatIR synchronizes lighting devices (and possibly other gadgets) in real-time via a unidirectional infrared serial protocol.
 
 This is the firmware for ATtiny861 microcontrollers implementing a simple receiver handling 4 PWM channels.
 
