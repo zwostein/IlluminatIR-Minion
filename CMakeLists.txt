@@ -36,3 +36,15 @@ add_avr_executable(${PROJECT_NAME}
 )
 
 avr_generate_fixed_targets()
+
+option(UTILS "Build utilities" OFF)
+if(UTILS)
+	include(ExternalProject)
+	ExternalProject_Add(illuminatir_minion_utils
+		PREFIX util
+		SOURCE_DIR ${CMAKE_SOURCE_DIR}/util
+		BINARY_DIR ${CMAKE_BINARY_DIR}/util
+		BUILD_ALWAYS 1
+		INSTALL_COMMAND ""
+	)
+endif()

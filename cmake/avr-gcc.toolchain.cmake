@@ -394,7 +394,23 @@ function(avr_generate_fixed_targets)
    add_custom_target(
       set_calibration
       ${AVR_UPLOADTOOL} ${AVR_UPLOADTOOL_BASE_OPTIONS} ${AVR_UPLOADTOOL_OPTIONS} -P ${AVR_UPLOADTOOL_PORT}
-         -U calibration:w:${AVR_MCU}_calib.hex
+         -U calibration:w:${AVR_MCU}_calib.bin:r
          COMMENT "Program calibration status of internal oscillator from ${AVR_MCU}_calib.hex."
+   )
+   
+   # get eeprom
+   add_custom_target(
+      get_eeprom
+         ${AVR_UPLOADTOOL} ${AVR_UPLOADTOOL_BASE_OPTIONS} ${AVR_UPLOADTOOL_OPTIONS} -P ${AVR_UPLOADTOOL_PORT}
+         -U eeprom:r:${AVR_MCU}_eeprom.tmp:r
+         COMMENT "Write calibration status of internal oscillator to ${AVR_MCU}_eeprom.tmp."
+   )
+   
+   # set eeprom
+   add_custom_target(
+      set_eeprom
+      ${AVR_UPLOADTOOL} ${AVR_UPLOADTOOL_BASE_OPTIONS} ${AVR_UPLOADTOOL_OPTIONS} -P ${AVR_UPLOADTOOL_PORT}
+         -U eeprom:w:${AVR_MCU}_eeprom.bin:r
+         COMMENT "Program calibration status of internal oscillator from ${AVR_MCU}_eeprom.bin."
    )
 endfunction()

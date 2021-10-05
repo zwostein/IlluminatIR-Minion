@@ -36,17 +36,12 @@
 #include "gammaLut.h"
 
 
-//#define CHANNELSWITCHES_ENABLE
-#define CHANNELSWITCHES_INVERT
-
-
-
 ////////////////////////////////////////////////////////////////
 ////////////////////////////  USI   ////////////////////////////
 int wrap_putchar( char c, FILE * stream )
 {
 	(void)stream;
-#if 0
+#if 0 // output on serial interferes with receiver - enable only for debugging sessions
 	if( c == '\n')
 		usiserial_putByte('\r');
 	usiserial_putByte( c );
@@ -187,28 +182,11 @@ static inline void softPwmLed_set( uint8_t value )
 ////////////////////////////////////////////////////////////////
 
 
-typedef struct {
-	union {
-		uint8_t channel[4];
-		struct {
-			uint8_t red;
-			uint8_t green;
-			uint8_t blue;
-			uint8_t uv;
-		};
-	};
-} values_t;
-
-typedef struct {
-	values_t defaultValues;
-#ifndef CHANNELSWITCHES_ENABLE
-	uint8_t  channelOffset;
-#endif
-	uint8_t     crc;
-} config_t;
-
+static volatile uint8_t red;
+static volatile uint8_t green;
+static volatile uint8_t blue;
+static volatile uint8_t uv;
 static volatile uint8_t channelOffset = 0;
-static volatile values_t currentValues = { 0 };
 
 config_t EEMEM eepromConfig;
 
@@ -224,6 +202,7 @@ static bool config_get( config_t * config, const config_t * defaultConfig )
 		return false;
 	}
 	memset( config, 0, sizeof(config_t) );
+	config->oscCal = OSCCAL;
 	return false;
 }
 
@@ -270,20 +249,25 @@ static void animation_endSaving()
 		pwmLed_setRed( i );
 		_delay_ms( 1 );
 	}
-	pwmLed_setRed  ( currentValues.red   );
-	pwmLed_setGreen( currentValues.green );
-	pwmLed_setBlue ( currentValues.blue  );
-	softPwmLed_set ( currentValues.uv    );
+	pwmLed_setRed  ( red   );
+	pwmLed_setGreen( green );
+	pwmLed_setBlue ( blue  );
+	softPwmLed_set ( uv    );
 }
 
 static void config_makeDefault()
 {
-	config_t config = {
-		.defaultValues = currentValues,
+	config_t config;
+	config_get( &config, NULL );
+
+	config.red   = red;
+	config.green = green;
+	config.blue  = blue;
+	config.uv    = uv;
 #ifndef CHANNELSWITCHES_ENABLE
-		.channelOffset = channelOffset,
+	config.channelOffset = channelOffset;
 #endif
-	};
+
 	animation_beginSaving();
 	fprintf_P( &usi, PSTR("Saving config to EEPROM...") );
 	config_update( &config );
@@ -303,10 +287,10 @@ static void setChannel( uint8_t channel, uint8_t value )
 {
 	channel -= channelOffset;
 	switch( channel ) {
-		case 0: currentValues.red = value;   pwmLed_setRed( value );   break;
-		case 1: currentValues.green = value; pwmLed_setGreen( value ); break;
-		case 2: currentValues.blue = value;  pwmLed_setBlue( value );  break;
-		case 3: currentValues.uv = value;    softPwmLed_set( value );  break;
+		case 0: red   = value; pwmLed_setRed( value );   break;
+		case 1: green = value; pwmLed_setGreen( value ); break;
+		case 2: blue  = value; pwmLed_setBlue( value );  break;
+		case 3: uv    = value; softPwmLed_set( value );  break;
 	}
 }
 
@@ -390,18 +374,22 @@ int main(void)
 	if( !eeprom_config_ok ) {
 		fprintf_P( &usi, PSTR("EEPROM config CRC failed - using defaults!\n") );
 	} else {
+		OSCCAL = config.oscCal;
 		fprintf_P( &usi, PSTR("EEPROM config loaded.\n") );
 	}
 	channelOffset = config.channelOffset;
-	currentValues = config.defaultValues;
-	pwmLed_setRed  ( currentValues.red   );
-	pwmLed_setGreen( currentValues.green );
-	pwmLed_setBlue ( currentValues.blue  );
-	softPwmLed_set ( currentValues.uv    );
+	red   = config.red;
+	green = config.green;
+	blue  = config.blue;
+	uv    = config.uv;
+	pwmLed_setRed  ( red   );
+	pwmLed_setGreen( green );
+	pwmLed_setBlue ( blue  );
+	softPwmLed_set ( uv    );
 
 	while( true ) {
-		static uint8_t packet[ILLUMINATIR_COBS_PACKET_MAXSIZE];
-		static uint8_t packet_pos = 0;
+		static uint8_t cobsPacket[ILLUMINATIR_COBS_PACKET_MAXSIZE];
+		static uint8_t cobsPacket_pos = 0;
 
 #ifdef CHANNELSWITCHES_ENABLE
 		channelOffset = 0
@@ -423,22 +411,16 @@ int main(void)
 
 		uint8_t rec = usiserial_getByte();
 		if( rec == 0 ) {
-			/*
-			for( uint8_t i = 0; i < packet_pos; i++ ) {
-				fprintf_P( &usi, PSTR("%02x"), (unsigned)packet[i] );
-			}
-			fprintf_P( &usi, PSTR("00\n") );
-			*/
-			illuminatir_error_t err = illuminatir_cobs_parse( packet, packet_pos, setChannel, setConfig );
+			illuminatir_error_t err = illuminatir_cobs_parse( cobsPacket, cobsPacket_pos, setChannel, setConfig );
 			if( err != ILLUMINATIR_ERROR_NONE ) {
 				fprintf_P( &usi, PSTR("Could not parse packet: %S\n"), illuminatir_error_toString_P(err) );
 			}
 
-			packet_pos = 0;
+			cobsPacket_pos = 0;
 		} else {
-			if( packet_pos < sizeof(packet)-1 ) {
-				packet[packet_pos] = rec;
-				packet_pos++;
+			if( cobsPacket_pos < sizeof(cobsPacket) ) {
+				cobsPacket[cobsPacket_pos] = rec;
+				cobsPacket_pos++;
 			}
 		}
 	}

@@ -5,8 +5,11 @@
 
 #include <avr/io.h>
 
+#include "config.h"
 
-#define USISERIAL_BAUDRATE 4600UL
+#ifndef USISERIAL_BAUDRATE
+#	define USISERIAL_BAUDRATE 9600UL
+#endif
 
 #ifndef USISERIAL_PORTA
 #	define USISERIAL_PORTA
