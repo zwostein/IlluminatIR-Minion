@@ -33,6 +33,8 @@ add_avr_executable(${PROJECT_NAME}
 	${PROJECT_SOURCE_DIR}/ext/libilluminatir/src/illuminatir.c
 	${PROJECT_SOURCE_DIR}/ext/libilluminatir/src/crc8.c
 	${PROJECT_SOURCE_DIR}/ext/libilluminatir/src/cobs.c
+	${PROJECT_SOURCE_DIR}/ext/libilluminatir/src/lfsr.c
+	${PROJECT_SOURCE_DIR}/ext/libilluminatir/src/rand.c
 )
 
 avr_generate_fixed_targets()

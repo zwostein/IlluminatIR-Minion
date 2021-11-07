@@ -411,7 +411,7 @@ int main(void)
 
 		uint8_t rec = usiserial_getByte();
 		if( rec == 0 ) {
-			illuminatir_error_t err = illuminatir_cobs_parse( cobsPacket, cobsPacket_pos, setChannel, setConfig );
+			illuminatir_error_t err = illuminatir_rand_cobs_parse( cobsPacket, cobsPacket_pos, setChannel, setConfig );
 			if( err != ILLUMINATIR_ERROR_NONE ) {
 				fprintf_P( &usi, PSTR("Could not parse packet: %S\n"), illuminatir_error_toString_P(err) );
 			}
